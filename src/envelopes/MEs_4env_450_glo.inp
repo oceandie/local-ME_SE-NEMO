@@ -64,7 +64,7 @@ bathyFile = '/data/users/dbruciaf/OVF/GO8-eORCA025_domain/bathymetry.eORCA025-GO
 hgridFile = '/data/users/dbruciaf/SE-NEMO/se-orca025/se-nemo-domain_cfg/coordinates.nc'
 
 # domain_cfg.nc or mesh_mask.nc file of the z-levels grid
-zgridFile = "/data/users/dbruciaf/OVF/zps_GO8/real/domain_cfg_zps.nc"
+zgridFile = "no" #"/data/users/dbruciaf/OVF/zps_GO8/real/domain_cfg_zps.nc"
 
 # B) ENVELOPES geometrical parameters -------------------------------------
 
@@ -85,8 +85,8 @@ zgridFile = "/data/users/dbruciaf/OVF/zps_GO8/real/domain_cfg_zps.nc"
 #    e_min_ofs[i] = "flat", e_max_dep[i] = "max"                               
 #
 
-e_min_ofs = [   8.,  100.,   500., "flat"]
-e_max_dep = [ 500., 1650.,  2000.,  5750.]
+e_min_ofs = [   8.,  180.,   500., "flat"]
+e_max_dep = [ 450., 1650.,  2000.,  5750.]
 
 # C) ENVELOPES smoothing parameters ------------------------------------------
 
