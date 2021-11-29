@@ -69,56 +69,84 @@ sec_lat14 = [  64.97,   39.06]
 sec_lon15 = [-148.78, -141.75]
 sec_lat15 = [  61.34,   54.65]
 
-# North Pacific Ocean - Alaska
+# Weddel Sea
+sec_lon16 = [-59.79, -36.06]
+sec_lat16 = [-75.73, -66.05]
+sec_lon17 = [-36.23, -45.39]
+sec_lat17 = [-78.22, -57.25]
+
+# Ross Sea
+sec_lon18 = [-179.91, -179.03]
+sec_lat18 = [ -78.32,  -68.29]
+
+# Antarctica
+sec_lon19 = [-79.83, -46.43]
+sec_lat19 = [-64.80, -65.54]
+# Bellingshausen Sea
+sec_lon20 = [-78.95, -85.46]
+sec_lat20 = [-72.31, -66.54]
+
+# New Zeland
+sec_lon21 = [170.18, -174.60]
+sec_lat21 = [-45.75,  -50.53]
 
 #sec_I_indx_1b_L  = [-1]*len(range(0,1200,100)) + range(0,1400,100)
 #sec_J_indx_1b_L  = range(0,1200,100) + len(range(0,1400,100))*[-1]
-sec_I_indx_1b_L  = [sec_lon1, sec_lon2, sec_lon3, sec_lon4,sec_lon5, sec_lon6, sec_lon7, sec_lon8, sec_lon9, sec_lon10, sec_lon11, sec_lon12, sec_lon13, sec_lon14, sec_lon15]
-sec_J_indx_1b_L  = [sec_lat1, sec_lat2, sec_lat3, sec_lat4,sec_lat5, sec_lat6, sec_lat7, sec_lat8, sec_lat9, sec_lat10, sec_lat11, sec_lat12, sec_lat13, sec_lat14, sec_lat15]
+sec_I_indx_1b_L  = [sec_lon1 , sec_lon2 , sec_lon3 , sec_lon4 , sec_lon5 , 
+                    sec_lon6 , sec_lon7 , sec_lon8 , sec_lon9 , sec_lon10, 
+                    sec_lon11, sec_lon12, sec_lon13, sec_lon14, sec_lon15, 
+                    sec_lon16, sec_lon17, sec_lon18, sec_lon19, sec_lon20, sec_lon21]
+sec_J_indx_1b_L  = [sec_lat1 , sec_lat2 , sec_lat3 , sec_lat4 , sec_lat5 , 
+                    sec_lat6 , sec_lat7 , sec_lat8 , sec_lat9 , sec_lat10, 
+                    sec_lat11, sec_lat12, sec_lat13, sec_lat14, sec_lat15, 
+                    sec_lat16, sec_lat17, sec_lat18, sec_lat19, sec_lat20, sec_lat21]
 coord_type_1b_L  = "dist"
 rbat2_fill_1b_L  = "false"
 xlim_1b_L        = "maxmin" #[16000., 19000.]
-ylim_1b_L        = [0, 6000] #[0, 3500] #5900 #3500] # 800
+ylim_1b_L        = [0., 600] #[0, 6000] #[0, 3500] #5900 #3500] # 800
 vlevel_1b_L      = 'MES'
 xgrid_1b_L       = "false"
 
 #========================================================================
 # 1. READING BATHY_METER and MESH_MASK FILE AND DELETING TIME DIMENSION
 #========================================================================
-#batyfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_250_1500/bathymetry.MEs_4env_250_maxdep_1500.0.nc"
-#meshfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_250_1500/mesh_mask_36-14-7-18.nc"
-batyfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/bathymetry.MEs_4env_300_glo_maxdep_1650.0.nc"
-meshfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/mesh_mask.nc"
+batylist = ["/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/glo/r02-r02/bathymetry.MEs_4env_300_02-02_glo_maxdep_1650.0.nc",
+            "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r02-r02/bathymetry.MEs_4env_800_02-02_ant_maxdep_2600.0.nc"]
+meshfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r02-r02/mesh_mask_r02-r02.nc"
 
-print batyfile
-f_bat = nc4.Dataset(batyfile,"r")
-varNames = f_bat.variables.keys()
-# 1) Bathymetry
-bathy = np.array(f_bat.variables["Bathymetry"])[:,:]
-varNames = f_bat.variables.keys()
-# 2) Envelopes
-hbatt = []
-#if "hbatt" in varNames:
-#   hbatt.append(np.array(f_bat.variables["hbatt"])[:,:])
-#if "hbatt_1" in varNames:
-#   hbatt.append(np.array(f_bat.variables["hbatt_1"])[:,:])
-#   nenv = 2
-#   while nenv != 0:
-#         name = 'hbatt_' + str(nenv)
-#         if name in varNames:
-#            nenv = nenv + 1
-#            hbatt.append(np.array(f_bat.variables[name])[:,:])
-#         else:
-#            nenv = 0
-# 3) Localisation mask
 msk_mes = None
-if "s2z_msk" in varNames:
-   msk_mes = np.array(f_bat.variables["s2z_msk"])[:,:]
-   msk_mes[msk_mes>0] = 1
+for bat in range(len(batylist)):
 
-print msk_mes
+    batyfile = batylist[bat]
+    print batyfile
+    f_bat = nc4.Dataset(batyfile,"r")
+    varNames = f_bat.variables.keys()
+    if bat == 0:    
+       # 1) Bathymetry
+       bathy = np.array(f_bat.variables["Bathymetry"])[:,:]
+       varNames = f_bat.variables.keys()
+       # 2) Envelopes
+       hbatt = []
+       #if "hbatt" in varNames:
+       #   hbatt.append(np.array(f_bat.variables["hbatt"])[:,:])
+       #if "hbatt_1" in varNames:
+       #   hbatt.append(np.array(f_bat.variables["hbatt_1"])[:,:])
+       #   nenv = 2
+       #   while nenv != 0:
+       #         name = 'hbatt_' + str(nenv)
+       #         if name in varNames:
+       #            nenv = nenv + 1
+       #            hbatt.append(np.array(f_bat.variables[name])[:,:])
+       #         else:
+       #            nenv = 0
+    # 3) Localisation mask
+    if "s2z_msk" in varNames:
+       msk_loc = np.array(f_bat.variables["s2z_msk"])[:,:]
+       if bat == 0:
+          msk_mes = np.copy(msk_loc) 
+       msk_mes[msk_loc>0] = 1
 
-f_bat.close()
+    f_bat.close()
 
 #nemo_grid = iom.read_nemo_mesh(meshfile,coorfile)
 nemo_grid = iom.read_nemo_mesh(meshfile)
