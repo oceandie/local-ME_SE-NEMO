@@ -22,11 +22,15 @@ from utils import plot_hpge
 
 # 1. INPUT FILES
 
-vcoord = 'r02-r02'
-DOMCFG_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r02-r02/domain_cfg_r02-r02.nc'
+vcoord = 'r015-r010'#_r007_r004v2'
+DOMCFG_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r015-r010_r007_r004v2/domain_cfg_r015-r010_007_004v2.nc'
 HPGE_dir = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/'
 HPGE_file = '/maximum_hpge.nc'
 
+#vcoord = 'hsz_51_ztap'
+#DOMCFG_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/hsz_39_ztap/domain_cfg_39_ztaper_match.nc'
+#HPGE_dir = '/data/users/dbruciaf/SE-NEMO/se-orca025/'
+#HPGE_file = '/maximum_hpge.nc'
 
 # 3. PLOT
 #lon0 = -178.
@@ -67,11 +71,12 @@ for env in range(len(varss)):
     var = ds_hpge[varss[env]] 
     colmap = 'hot_r' #cmocean.cm.ice
     vmin = 0.0
-    vmax = 0.1
+    vmax = 0.05
     cbar_extend = 'max' #"max"
     cbar_label = "HPG errors [$m\;s^{-1}$]"
     cbar_hor = 'horizontal'
-    map_lims = [0, 1441, 390, 1206]
+    #map_lims = [0, 1441, 390, 1206]
+    map_lims = [0, 1441, 0, 1206]
     cn_lev = [300.] # None 
 
     plot_hpge(fig_name, fig_path, lon, lat, var, proj, colmap, 
@@ -86,7 +91,7 @@ for env in range(len(varss)):
     var = ds_hpge[varss[env]]
     colmap = 'hot_r' #cmocean.cm.ice
     vmin = 0.0
-    vmax = 0.1
+    vmax = 0.05
     cbar_extend = 'max' #"max"
     cbar_label = "HPG errors [$m\;s^{-1}$]"
     cbar_hor = 'horizontal'

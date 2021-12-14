@@ -12,53 +12,65 @@ import glob
 import numpy as np
 from matplotlib import pyplot as plt
 import xarray as xr
-from xnemogcm import open_domain_cfg
 import cartopy.crs as ccrs
 import cmocean
-from utils import plot_hpge, plot_env
+from utils import plot_hpge
 
 # ==============================================================================
 # Input parameters
 
 # 1. INPUT FILES
 
-vcoord = 'r12_r12'
-ENV_file = '/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12/bathymetry.MEs_4env_2800_r12_r12_maxdep_2800.0.nc'
+BATHY_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r015-r010_r007_r004v2/bathymetry.MEs_4env_800_015-010_007_004v2_ant_maxdep_2600.0.nc'
 
 # 3. PLOT
-lon0 = -45.
-lon1 =  5.0
-lat0 =  53.
-lat1 =  72.
-proj = ccrs.Mercator() #ccrs.Robinson()
+#lon0 = -178.
+#lon1 =  178.
+#lat0 =  -78.8
+#lat1 =   88.
+proj =  None #ccrs.Robinson() #ccrs.Mercator() #ccrs.Robinson()
 
 # ==============================================================================
 
-ds_env = xr.open_dataset(ENV_file)
+# Loading domain geometry
+ds  = xr.open_dataset(BATHY_file)
 
-# Extracting only the part of the domain we need
+# Plotting BATHYMETRY ----------------------------------------------------------
 
-ds_env =  ds_env.isel(x=slice(880,1200),y=slice(880,1140))
+#bathy = ds_dom["bathymetry"]
+env = ds["hbatt_2"]#.isel(x_c=slice(1, None), y_c=slice(1, None))
 
-
-# Plotting envelope ----------------------------------------------------------
-
-env = "hbatt_3"
-
-fig_name = env + '_' + vcoord + '.png'
+fig_name = 'envelope_2.png'
 fig_path = "./"
-lon = ds_env["nav_lon"]
-lat = ds_env["nav_lat"]
-var = ds_env[env] 
-colmap = cmocean.cm.deep
-vmin = 150.0
-vmax = 2800
+lon = None #ds_dom["glamf"]
+lat = None #ds_dom["gphif"]
+colmap = "jet" #cmocean.cm.ice
+vmin = 350.
+vmax = 2500.
 cbar_extend = 'max' #"max"
 cbar_label = "Depth [$m$]"
-cbar_hor = 'vertical'
-map_lims = [lon0, lon1, lat0, lat1]
+cbar_hor = 'horizontal'
+map_lims = [0, 1441, 0, 1206]
+cn_lev = None 
 
-plot_env(fig_name, fig_path, lon, lat, var, proj, colmap, 
-         vmin, vmax, cbar_extend, cbar_label, cbar_hor, map_lims)
+plot_hpge(fig_name, fig_path, lon, lat, env, proj, colmap, 
+          vmin, vmax, cbar_extend, cbar_label, cbar_hor, map_lims, env, cn_lev)
 
- 
+env = ds["msk_pge2"]#.isel(x_c=slice(1, None), y_c=slice(1, None))
+
+fig_name = 'pge2.png'
+fig_path = "./"
+lon = None #ds_dom["glamf"]
+lat = None #ds_dom["gphif"]
+colmap = "jet" #cmocean.cm.ice
+vmin = 1.
+vmax = 2.
+cbar_extend = 'max' #"max"
+cbar_label = ""
+cbar_hor = 'horizontal'
+map_lims = [0, 1441, 0, 1206]
+cn_lev = None
+
+plot_hpge(fig_name, fig_path, lon, lat, env, proj, colmap,
+          vmin, vmax, cbar_extend, cbar_label, cbar_hor, map_lims, env, cn_lev)
+
