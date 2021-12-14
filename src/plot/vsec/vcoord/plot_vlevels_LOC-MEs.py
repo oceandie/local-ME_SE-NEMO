@@ -103,16 +103,19 @@ sec_J_indx_1b_L  = [sec_lat1 , sec_lat2 , sec_lat3 , sec_lat4 , sec_lat5 ,
 coord_type_1b_L  = "dist"
 rbat2_fill_1b_L  = "false"
 xlim_1b_L        = "maxmin" #[16000., 19000.]
-ylim_1b_L        = [0., 600] #[0, 6000] #[0, 3500] #5900 #3500] # 800
+ylim_1b_L        = [0., 6000] #[0, 600] #[0, 3500] #5900 #3500] # 800
 vlevel_1b_L      = 'MES'
 xgrid_1b_L       = "false"
 
 #========================================================================
 # 1. READING BATHY_METER and MESH_MASK FILE AND DELETING TIME DIMENSION
 #========================================================================
-batylist = ["/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/glo/r02-r02/bathymetry.MEs_4env_300_02-02_glo_maxdep_1650.0.nc",
-            "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r02-r02/bathymetry.MEs_4env_800_02-02_ant_maxdep_2600.0.nc"]
-meshfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r02-r02/mesh_mask_r02-r02.nc"
+batylist = ["/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/glo/r015-r010_r007_r004v2/bathymetry.MEs_4env_300_015-010_007_004v2_glo_maxdep_1650.0.nc",
+            "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r015-r010_r007_r004v2/bathymetry.MEs_4env_800_015-010_007_004v2_ant_maxdep_2600.0.nc"]
+meshfile = "/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r015-r010_r007_r004v2/mesh_mask_r015-r010_007_004v2.nc"
+
+#batylist = ['/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12-r075-r040_v3/bathymetry.MEs_4env_2800_r12_r12-r075-r040_v3_maxdep_2800.0.nc']
+#meshfile = "/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12-r075-r040_v3/mesh_mask_r12_r12-r075-r040_v3.nc"
 
 msk_mes = None
 for bat in range(len(batylist)):
