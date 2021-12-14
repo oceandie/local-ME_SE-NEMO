@@ -1,3 +1,5 @@
-src/envelopes/__pycache__/
-src/plot/vsec/vcoord/plot_section.pyc
-src/plot/vsec/vcoord/plots.out
+*.png
+*.pyc
+*.out
+*__pycache__
+*Thumbs.db
