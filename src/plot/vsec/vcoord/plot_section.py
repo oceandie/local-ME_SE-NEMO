@@ -21,11 +21,9 @@
 #            |--------------------------------------------------------------------------|
 
 import numpy as np
+import utils as utl
 
-import NEMOpy.tools.common as com
-import NEMOpy.iom.namelist as nam
-import NEMOpy.tools.math as mat
-from scipy import interpolate
+from scipy.interpolate import interp1d
 
 import matplotlib as matpl
 import matplotlib.pyplot as plt
@@ -33,11 +31,12 @@ import matplotlib.tri as tri
 import matplotlib.path as path
 import matplotlib.patches as patches
 import matplotlib.ticker as mtick
+import matplotlib.colors as colors
 
 #===================================================================================================
 
 def mpl_sec_get_section(lon3, lat3, rbat2, zenv2, sec_i, sec_j, coord_type, \
-                        var3=[], tmsk3=[], tdep3=[], wdep3=[], tpnt3=[], wlev3=[], msk_mes=None):
+                        var3=[], tmsk3=[], tdep3=[], wdep3=[], tpnt3=[], wlev3=[], var3_aux=[], msk_mes=None):
 
     '''
     This function returns x-axis coordinates data for a given section
@@ -55,15 +54,15 @@ def mpl_sec_get_section(lon3, lat3, rbat2, zenv2, sec_i, sec_j, coord_type, \
     if isinstance(sec_i, list) and isinstance(sec_j, list):
 
        if not len(sec_i) == len(sec_j):
-          print ""
-          print "mpl_sec_get_section() ERROR:"
-          print "section indexes lists do not"
-          print "have the same length."
-          print "Please check"
-          print ""
+          print("")
+          print("mpl_sec_get_section() ERROR:")
+          print("section indexes lists do not")
+          print("have the same length.")
+          print("Please check")
+          print("")
           return
 
-       secJ, secI  = com.get_poly_line_ij(sec_i, sec_j)
+       secJ, secI  = utl.get_poly_line_ij(sec_i, sec_j)
        sec_name    =  "lon_" + str(sec_i[0]) + "-" + str(sec_i[-1]) + \
                      "_lat_" + str(sec_j[0]) + "-" + str(sec_j[-1])
     else:
@@ -125,6 +124,11 @@ def mpl_sec_get_section(lon3, lat3, rbat2, zenv2, sec_i, sec_j, coord_type, \
     else:
        wlev2 = []
 
+    if var3_aux  != []:
+       var2_aux = np.zeros(shape=(nk,sectLen))
+    else:
+       var2_aux = []
+
     if msk_mes is not None:
        msk_mes2 = np.zeros(shape=(nk,sectLen))
     else:
@@ -162,16 +166,17 @@ def mpl_sec_get_section(lon3, lat3, rbat2, zenv2, sec_i, sec_j, coord_type, \
         this_lat = lat2[j,i]
         lon_sec.append(this_lon)
         lat_sec.append(this_lat)
-        if var2  != []: var2[:,s]  = var3[:,j,i]
-        if tmsk2 != []: tmsk2[:,s] = tmsk3[:,j,i]
-        if tdep2 != []: tdep2[:,s] = tdep3[:,j,i]
-        if wdep2 != []: wdep2[:,s] = wdep3[:,j,i]
-        if tpnt2 != []: tpnt2[:,s] = tpnt3[:,j,i]
-        if wlev2 != []: wlev2[:,s] = wlev3[:,j,i]
+        if var2     != []: var2[:,s]     = var3[:,j,i]
+        if tmsk2    != []: tmsk2[:,s]    = tmsk3[:,j,i]
+        if tdep2    != []: tdep2[:,s]    = tdep3[:,j,i]
+        if wdep2    != []: wdep2[:,s]    = wdep3[:,j,i]
+        if tpnt2    != []: tpnt2[:,s]    = tpnt3[:,j,i]
+        if wlev2    != []: wlev2[:,s]    = wlev3[:,j,i]
+        if var2_aux != []: var2_aux[:,s] = var3_aux[:,j,i]
         if msk_mes2 != []: msk_mes2[:,s] = msk_mes[j,i]
 
         if coord_type == "dist":
-           dist_from_last = mat.hvrsn_dst(last_lon, last_lat, this_lon, this_lat) / 1000; # in km
+           dist_from_last = utl.hvrsn_dst(last_lon, last_lat, this_lon, this_lat) / 1000.; # in km
            tot_dist = tot_dist + dist_from_last;
            xcoord[:,s] = tot_dist
            last_lon = this_lon
@@ -179,9 +184,9 @@ def mpl_sec_get_section(lon3, lat3, rbat2, zenv2, sec_i, sec_j, coord_type, \
 
         elif coord_type == "index":
            if isinstance(sec_i, list) and isinstance(sec_j, list):
-              print "mpl_sec_get_section() ERROR:"
-              print "You have a user defined section."
-              print 'Please chose coord_type = "dist"'
+              print("mpl_sec_get_section() ERROR:")
+              print("You have a user defined section.")
+              print('Please chose coord_type = "dist"')
               return
            if sec_i == -1: xcoord[:,s] = i
            if sec_j == -1: xcoord[:,s] = j
@@ -197,7 +202,7 @@ def mpl_sec_get_section(lon3, lat3, rbat2, zenv2, sec_i, sec_j, coord_type, \
        if sec_i == -1: xlabel = "i index"    
        if sec_j == -1: xlabel = "j index"       
 
-    return xcoord, ycoordB, ycoordH, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, lon_sec, lat_sec, msk_mes2   
+    return xcoord, ycoordB, ycoordH, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, var2_aux, lon_sec, lat_sec, msk_mes2   
 
 #===================================================================================================
 
@@ -235,7 +240,7 @@ def mpl_sec_int_s2z(cn_RVlevel, var2, tdep2, x2):
     # interpolate.interp1d:
     #
     for i in np.arange(reg_x2.shape[1]):
-        f_var          = interpolate.interp1d(Tdep2new[:,i], Tvar2new[:,i], kind='linear')
+        f_var          = interp1d(Tdep2new[:,i], Tvar2new[:,i], kind='linear')
         reg_var2[:,i]  = f_var(reg_dep2[:,i])
     #
     # ---------------------------------------------------------------------------------------
@@ -287,16 +292,16 @@ def mpl_sec_bathy(rbat, rbat_fill, zenv, x2, tdep2, wdep2, tmsk2, mbat_fill, \
     #RB = plt.plot(rbat_x[:-2], rbat_z[:-2], color='black', label='Bathymetry')
     ##RB = plt.plot(rbat_x[:], rbat_z[:], color='black', label='Bathymetry')
     if rbat_fill == "true":
-       vertexes = zip(rbat_x, rbat_z)
+       vertexes = list(zip(rbat_x, rbat_z))
        nverts = len(vertexes)
        codes     = np.ones(nverts, int) * path.Path.LINETO
        codes[0]  = path.Path.MOVETO
        polyg     = path.Path(vertexes, codes)
-       rpatch    = patches.PathPatch(polyg, facecolor='black', edgecolor='black', alpha=1.)
+       rpatch    = patches.PathPatch(polyg, facecolor='black', edgecolor='black', alpha=1.,zorder=10)
 
     # 3. MODEL BATHYMETRY VERTEXES
 
-    if tdep2 != [] and wdep2 != [] and tmsk2 != [] and vlevel != "":
+    if tdep2 != [] and wdep2 != [] and tmsk2 != [] and vlevel != "no":
 
        msk_oce = np.zeros(shape=tmsk2.shape)
        msk_oce[tmsk2 == 0] = 1
@@ -306,26 +311,26 @@ def mpl_sec_bathy(rbat, rbat_fill, zenv, x2, tdep2, wdep2, tmsk2, mbat_fill, \
           msk_oce[-1,:] = 1
 
        # PCOLOR OR LEVELS PLOT CASES
-       if PlotType != "contourf":
+       #if PlotType != "contourf" or vlevel == "Z_ps":
 
-          if vlevel == "S_re": # or vlevel == "MES":
-             #mbat_x, mbat_z = com.create_model_bathy_sec(vlevel, msk_oce, x2, tdep2, wdep2, rbat_max)
-             mbat_x = rbat_x
-             mbat_z = rbat_z
-          elif vlevel == "MES" or vlevel == "Z_ps":
-             mbat_x, mbat_z = com.create_model_bathy_sec(vlevel, msk_oce, x2, tdep2, wdep2, rbat_max)
-          else:
-             mbat_x, mbat_z = com.create_model_bathy_sec(vlevel, msk_oce, x2, tdep2, wdep2)
-          # 4. MODEL BATHYMETRY LINE AND PATCH 
-          #MB = plt.plot(mbat_x[:-2], mbat_z[:-2], color='grey', label='Model Bathymetry')
-          #plt.setp(MB, 'linewidth', 0.2)
-          if mbat_fill == "true":
-             vertexes = zip(mbat_x, mbat_z)
+       if vlevel == "S_re": #or vlevel == "MES":
+          #mbat_x, mbat_z = utl.create_model_bathy_sec(vlevel, msk_oce, x2, tdep2, wdep2, rbat_max)
+          mbat_x = rbat_x
+          mbat_z = rbat_z
+       elif vlevel == "MES" or vlevel == "SZT":
+          mbat_x, mbat_z = utl.create_model_bathy_sec(vlevel, msk_oce, x2, tdep2, wdep2, rbat_max)
+       else:
+          mbat_x, mbat_z = utl.create_model_bathy_sec(vlevel, msk_oce, x2, tdep2, wdep2)
+       # 4. MODEL BATHYMETRY LINE AND PATCH 
+       MB = plt.plot(mbat_x[:-2], mbat_z[:-2], color='grey', label='Model Bathymetry')
+       plt.setp(MB, 'linewidth', 0.2)
+       if mbat_fill == "true":
+             vertexes = list(zip(mbat_x, mbat_z))
              nverts = len(vertexes)
              codes     = np.ones(nverts, int) * path.Path.LINETO
              codes[0]  = path.Path.MOVETO
              polyg     = path.Path(vertexes, codes)
-             mpatch    = patches.PathPatch(polyg, facecolor='grey', edgecolor='black', alpha=1.)
+             mpatch    = patches.PathPatch(polyg, facecolor='gray', edgecolor='black', alpha=1.,zorder=5)
 
     # 5. Z-ENV VERTEXES
 
@@ -339,7 +344,7 @@ def mpl_sec_bathy(rbat, rbat_fill, zenv, x2, tdep2, wdep2, tmsk2, mbat_fill, \
                zenv_z.append(zenv[nenv,i])
            # 6. Z-ENV LINE
            ZE = plt.plot(zenv_x, zenv_z, color='red', label='Z-Envelope')
-           plt.setp(ZE, 'linewidth', 3.5)    
+           plt.setp(ZE, 'linewidth', 5., zorder=10)    
 
     return rpatch, mpatch, RB, MB, ZE
 
@@ -349,7 +354,7 @@ def mpl_sec_settings(var2, x2, dep2, varlim, xlim, ylim):
 
     if var2 != [] and varlim != []:
 
-       if isinstance(varlim, basestring):
+       if isinstance(varlim, (str, bytes)):
           vlim_max = np.nanmax(var2)
           vlim_min = np.nanmin(var2)
        else:
@@ -360,7 +365,7 @@ def mpl_sec_settings(var2, x2, dep2, varlim, xlim, ylim):
        vlim_max = []
        vlim_min = []
 #-------------------------------------------------
-    if isinstance(xlim, basestring):
+    if isinstance(xlim, (str, bytes)):
        xlim_min = np.nanmin(x2)
        xlim_max = np.nanmax(x2)
     else:
@@ -368,7 +373,7 @@ def mpl_sec_settings(var2, x2, dep2, varlim, xlim, ylim):
        xlim_max = xlim[1]
 #--------------------------------------------------
 
-    if isinstance(ylim, basestring):
+    if isinstance(ylim, (str, bytes)):
 
        ylim_min = np.nanmin(dep2)
        ylim_max = np.nanmax(dep2)
@@ -384,15 +389,17 @@ def mpl_sec_settings(var2, x2, dep2, varlim, xlim, ylim):
 #===================================================================================================
 
 def mpl_sec_draw_scalar(PlotType, var2, x2, dep2, vlim_min, vlim_max, \
-                        colmap, cn_line, cn_level, cn_label, cn_color, cn_fill):
+                        colmap, cn_line, cn_level, cn_label, cn_color, cn_fill, var2_aux=[]):
 
     '''
     This function draws section scalar plots.
     '''
  
     var2_masked = np.ma.masked_where(np.isnan(var2), var2)
+    if var2_aux != []: 
+       var2_aux_masked = np.ma.masked_where(np.isnan(var2_aux), var2_aux)
 
-    if isinstance(colmap, basestring):
+    if isinstance(colmap, (str, bytes)):
        cmap = plt.cm.get_cmap(colmap)
     else:
        cmap = colmap
@@ -422,11 +429,20 @@ def mpl_sec_draw_scalar(PlotType, var2, x2, dep2, vlim_min, vlim_max, \
 
        if cn_fill == 'true':
 
-          pc = plt.contourf(x2, dep2, var2_masked, cn_level, cmap = cmap, \
-                          vmin = vlim_min, vmax = vlim_max, extend = 'both')
+          norm = colors.BoundaryNorm(cn_level, cmap.N, clip=True)
+          pc = plt.contourf(x2, dep2, var2_masked, cn_level, cmap = cmap, norm=norm,\
+                            vmin = vlim_min, vmax = vlim_max, extend = 'both')
 
           #pc = plt.contourf(x2, dep2, var2_masked, cn_level, cmap = cmap, \
           #                  vmin = vlim_min, vmax = vlim_max, extend = 'neither')
+
+       if var2_aux != []:
+          rho_lev = [27.25,27.5,27.6,27.7,27.8,27.9,28.0,28.1,28.2]
+          pc_aux = plt.contour(x2, dep2, var2_aux_masked, rho_lev, colors = 'k', 
+                               linewidths=2., extend = 'both')
+          pc_ovf = plt.contour(x2, dep2, var2_aux_masked, [27.8], colors = 'magenta', 
+                               linewidths=5.0, extend = 'both')
+          plt.clabel(pc_aux, inline=1, fontsize=25, fmt='%1.1f', colors='black')
 
     return cmap, pc
 
@@ -438,7 +454,7 @@ def mpl_sec_draw_levels(x2, wlev2):
 
     for k in np.arange(nk):
 
-        W_l  = plt.plot(x2[k,:], wlev2[k,:], linestyle='--', color='k')
+        W_l  = plt.plot(x2[k,:], wlev2[k,:], linestyle='--', color='k',zorder=10)
         plt.setp(W_l, 'linewidth', 0.5)
 
     return W_l
@@ -464,7 +480,7 @@ def mpl_sec_draw_grid_pnts(x2, dep2, var2=[], vlim_min=[], vlim_max=[], cmap=[])
 
 #===================================================================================================
 
-def mpl_sec_figure(fig, pc, var_strng, title, xlabel, ylabel):
+def mpl_sec_figure(fig, pc, var_strng, title, xlabel, ylabel, cn_level=None):
 
     '''
     This function sets property of
@@ -489,7 +505,10 @@ def mpl_sec_figure(fig, pc, var_strng, title, xlabel, ylabel):
 
     if pc != []:
 
-       cb = plt.colorbar(pc)
+       if cn_level is not None:
+          cb = plt.colorbar(pc, ticks=cn_level)
+       else:
+          cb = plt.colorbar(pc)
        cb.ax.tick_params(labelsize=25)
        cb.set_label(var_strng, labelpad=20, size=25)
 
@@ -503,9 +522,10 @@ def mpl_sec_figure(fig, pc, var_strng, title, xlabel, ylabel):
 
 def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3, m, \
             coord_type, vlevel, check='true', rbat2=[], zenv2=[], rbat2_fill="false", \
-            mbat_ln="false", mbat_fill="false", xlim='no', ylim='no', xgrid='false', msk_mes=None):
+            mbat_ln="false", mbat_fill="false", xlim='no', ylim='no', xgrid='false', 
+            msk_mes=None, first_zlv=None):
 
-            if msk_mes is not None: print 'LOCALISING'
+            if msk_mes is not None: print('LOCALISING')
 
             funcID   = "sec_"
 
@@ -516,10 +536,10 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
 
 
             if i3D_flag: 
-               print "TRANSECT OF NEMO-OGCm VERTICAL GEOMETRY"
+               print("TRANSECT OF NEMO-OGCm VERTICAL GEOMETRY")
                var_strng = 'vertical_levels'
             else:
-               print "TRANSECT OF NEMO-OGCm BATHYMETRY"
+               print("TRANSECT OF NEMO-OGCm BATHYMETRY")
                var_strng = 'bathymetry' 
 
             #==============================================
@@ -532,28 +552,28 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
                        tdep3.shape == wdep3.shape and \
                        tdep3.ndim == 3):
 
-                       print "mpl_lev() ERROR:"
-                       print ""
-                       print "Please check t-coordinates"
-                       print "matrixes dimensions"
-                       print "i3D_flag = True"
+                       print("mpl_lev() ERROR:")
+                       print("")
+                       print("Please check t-coordinates")
+                       print("matrixes dimensions")
+                       print("i3D_flag = True")
                        return
             else:
                if not (tlon3.shape == tlat3.shape and \
                        tlon3.ndim == 3):
 
-                       print "mpl_lev() ERROR:"
-                       print ""
-                       print "Please check t-coordinates"
-                       print "matrixes dimensions"
-                       print "i3D_flag = False"
+                       print("mpl_lev() ERROR:")
+                       print("")
+                       print("Please check t-coordinates")
+                       print("matrixes dimensions")
+                       print("i3D_flag = False")
                        return
 
             nk = tlon3.shape[0]
             nj = tlon3.shape[1]
             ni = tlon3.shape[2]
 
-            print "MODEL DIMENSIONS: ", nk, " x ", nj, " x ", ni
+            print("MODEL DIMENSIONS: ", nk, " x ", nj, " x ", ni)
 
             #==============================================
             # GETTING VERTICAL LEVELS
@@ -561,25 +581,25 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
             tpnt3 = []
             wlev3 = []
             if i3D_flag:
-               tpnt3, wlev3 = com.nemo_vgeom(vlevel, tdep3, wdep3)
+               tpnt3, wlev3 = utl.nemo_vgeom(vlevel, tdep3, wdep3)
 
             #==============================================
             # SELECTING THE REQUESTED SECTION
 
             if i3D_flag:
                var3 = np.copy(tmsk3)
-               x2, rbat2_sec, zenv2_sec, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, lon_sec, lat_sec, msk_mes2 = \
+               x2, rbat2_sec, zenv2_sec, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, var2_aux, lon_sec, lat_sec, msk_mes2 = \
                mpl_sec_get_section(tlon3, tlat3, rbat2, zenv2, sec_i, sec_j, coord_type,\
-                                   var3 , tmsk3, tdep3, wdep3, tpnt3, wlev3, msk_mes)
+                                   var3 , tmsk3, tdep3, wdep3, tpnt3, wlev3, msk_mes=msk_mes)
             else:
-               x2, rbat2_sec, zenv2_sec, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, lon_sec, lat_sec, msk_mes2 = \
+               x2, rbat2_sec, zenv2_sec, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, var2_aux, lon_sec, lat_sec, msk_mes2 = \
                mpl_sec_get_section(tlon3, tlat3, rbat2, zenv2, sec_i, sec_j, coord_type,\
-                                   [], [], [], [], tpnt3, wlev3, msk_mes)
+                                   [], [], [], [], tpnt3, wlev3, msk_mes=msk_mes)
 
             #==============================================
             # OPENING FIGURE
 
-            fig = plt.figure(figsize = (34.,17.5), dpi=500)
+            fig = plt.figure(figsize = (34.,17.5), dpi=100)
       
             #==============================================
             # SETTING BATHYMETRY PATCH
@@ -587,33 +607,39 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
             if i3D_flag:
                # We plot the model bathymetry creating a patch where the grid cells have T points
                # in the middle. Z_ps is a special case and it is maneged in a specific way.
-               Tvar2new, Tx2new, Tdep2new = com.nemo_ver_Tgrid4pcolor(var2, x2, tdep2, wdep2)
+               Tvar2new, Tx2new, Tdep2new = utl.nemo_ver_Tgrid4pcolor(var2, x2, tdep2, wdep2)
 
                if vlevel == "Z_ps":
                   for k in range(Tdep2new.shape[0]):
                       Tdep2new[k,:] = Tdep2new[k,int(Tdep2new.shape[1]/2.)]
-                  rbat2_max = np.nanmax(rbat2+500.)
                   rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                              x2       , tdep2     , wdep2    , \
-                                                             tmsk2    , mbat_fill , vlevel   , \
-                                                             ""       , rbat2_max)
-               elif vlevel == "MES":
-                  rbat2_max = np.nanmax(rbat2+500.)
+                                                             tmsk2    , mbat_fill , vlevel   , "")
+               elif vlevel == "MES" or vlevel == "SZT":
+
+                  if vlevel == "SZT" and first_zlv is not None:
+                     msk_mes2[first_zlv::,:] = 0
+
+                  rbat2_max = np.nanmax(rbat2+2000.)
                   rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                              x2       , tdep2     , Tdep2new , \
                                                              tmsk2    , mbat_fill , vlevel   , \
                                                              ""       , rbat2_max, msk_mes2)
-                  if msk_mes is not None:  
+                  if msk_mes is not None:
                      msk_zps2 = np.ones(msk_mes2.shape) - msk_mes2
                      Tdep2loc = np.copy(Tdep2new)
                      for k in range(Tdep2loc.shape[0]):
                          Tdep2loc[k,:] = Tdep2loc[k,int(Tdep2loc.shape[1]/2.)]
-                     rbat2_max = np.nanmax(rbat2+500.)
+                     rbat2_max = np.nanmax(rbat2+1000.)
+                     #rbat2_max = 6000.
+                     tdep2_zps = tdep2
+                     wdep2_zps = wdep2
+                     tdep2_zps[msk_zps2==0] = tdep2_zps[msk_zps2==0]+3000.
+                     wdep2_zps[msk_zps2==0] = wdep2_zps[msk_zps2==0]+3000.
                      rpatch_loc, mpatch_loc, RB_loc, MB_loc, ZE_loc = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
-                                                                                    x2       , tdep2     , wdep2    , \
+                                                                                    x2       , tdep2_zps , wdep2_zps, \
                                                                                     tmsk2    , mbat_fill , "Z_ps"   , \
                                                                                     ""       , rbat2_max, msk_zps2)
-                     del rpatch_loc, RB_loc, MB_loc, ZE_loc
                else:
                   rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                              x2       , tdep2     , Tdep2new , \
@@ -649,7 +675,7 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
                          wlev2_loc[k,:] = np.unique(wlev_loc)[-1]
                   wlev2[msk_zps2 == 1] = wlev2_loc[msk_zps2 == 1]
                W_l = mpl_sec_draw_levels(x2, wlev2)
-               
+
             #==============================================
             # DRAWING T GRID POINTS IF REQUESTED
 
@@ -676,9 +702,10 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
             ax, cb = mpl_sec_figure(fig, [], "", title, xlabel, ylabel)
 
 
+            if msk_mes is not None: ax.add_patch(mpatch_loc)
             if mpatch != []: ax.add_patch(mpatch)
             if rpatch != []: ax.add_patch(rpatch)
-            if msk_mes is not None: ax.add_patch(mpatch_loc)
+            #if msk_mes is not None: ax.add_patch(mpatch_loc)
 
             #==============================================
             # LIMITS OF MAIN SECTION
@@ -697,12 +724,6 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
                x, y = m(np.asarray(lon_sec), np.asarray(lat_sec))
                MAP = plt.plot(x, y, c="red")
                plt.setp(MAP, 'linewidth', 2.5)
-               lon_min = np.nanmin(np.asarray(lon_sec))-5.
-               lon_max = np.nanmax(np.asarray(lon_sec))+5.
-               lat_min = np.nanmin(np.asarray(lat_sec))-5.
-               lat_max = np.nanmax(np.asarray(lat_sec))+5.
-               X, Y = m(np.asarray([lon_min,lon_max]), np.asarray([lat_min,lat_max]))
-               plt.axis([X[0], X[1], Y[0], Y[1]])
 
             #==============================================
             # SAVING FIGURE
@@ -717,15 +738,17 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
 
 #===================================================================================================
 
-def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, PlotType, sec_i, sec_j, \
-            tlon3, tlat3, tdep3, wdep3, tmsk3, var3, m, coord_type, vlevel, rbat2=[], zenv2=[], \
-            rbat2_fill="false", mbat_ln="false", mbat_fill="false", xlim='no', ylim='no', varlim='no',\
-            colmap='jet', check='false', check_val='false', xgrid='false', cn_level=20, cn_line='true',\
-            cn_label='true', cn_color='false', cn_fill='true', cn_RegVertLev='false', cn_RVlevel='auto'):
+def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, PlotType, sec_i, sec_j,
+            tlon3, tlat3, tdep3, wdep3, tmsk3, var3, m, coord_type, vlevel, rbat2=[], zenv2=[],
+            rbat2_fill="false", mbat_ln="false", mbat_fill="false", xlim='no', ylim='no', varlim='no',
+            colmap='jet', check='false', check_val='false', xgrid='false', cn_level=20, cn_line='true',
+            cn_label='true', cn_color='false', cn_fill='true', cn_RegVertLev='false', cn_RVlevel='auto', 
+            var_aux=None, msk_mes=None):
 
     funcID   = "sec_"
 
-    print "TRANSECT of NEMO-OGCm OUTPUT: " #+ var_strng
+    print("TRANSECT of NEMO-OGCm OUTPUT: ") #+ var_strng
+    if msk_mes is not None: print('LOCALISING')
 
     #==============================================
     # CHECKING CONSISTENCY OF ARRAYS DIMENSIONS
@@ -735,25 +758,25 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
             tdep3.shape == tlon3.shape and \
             tdep3.shape == wdep3.shape and \
             tdep3.ndim == 3):
-       print "mpl_sec() ERROR:"
-       print ""
-       print "Please check t-coordinates"
-       print "matrixes dimensions"
+       print("mpl_sec() ERROR:")
+       print("")
+       print("Please check t-coordinates")
+       print("matrixes dimensions")
        return
 
     if not (var3.shape == tdep3.shape and \
             tmsk3.shape == tdep3.shape):
-       print "mpl_sec() ERROR:"
-       print ""
-       print "Please check scalar variable"
-       print "matrix dimensions"
+       print("mpl_sec() ERROR:")
+       print("")
+       print("Please check scalar variable")
+       print("matrix dimensions")
        return
 
     nk = tlon3.shape[0]
     nj = tlon3.shape[1]
     ni = tlon3.shape[2]
 
-    print "3D VARIABLES SHAPE: ", nk, " x ", nj, " x ", ni
+    print("3D VARIABLES SHAPE: ", nk, " x ", nj, " x ", ni)
 
     #==============================================
     # MANAGING VERTICAL LEVELS
@@ -761,21 +784,28 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
     tpnt3 = []
     wlev3 = []
     if vlevel != "no":
-       tpnt3, wlev3 = com.nemo_vgeom(vlevel, tdep3, wdep3)
+       tpnt3, wlev3 = utl.nemo_vgeom(vlevel, tdep3, wdep3)
+    elif msk_mes is not None:
+       tpnt3, wlev3 = utl.nemo_vgeom('MES', tdep3, wdep3)
 
     #==============================================
     # SELECTING THE REQUESTED SECTION    
 
-    x2, rbat2_sec, zenv2_sec, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, lon_sec, lat_sec = \
+    if var_aux is not None: 
+       var3_aux = var_aux
+    else:
+       var3_aux = []
+
+    x2, rbat2_sec, zenv2_sec, xlabel, sec_name, var2, tmsk2, tdep2, wdep2, tpnt2, wlev2, var2_aux, lon_sec, lat_sec, msk_mes2 = \
     mpl_sec_get_section(tlon3, tlat3, rbat2, zenv2, sec_i, sec_j, coord_type,\
-                        var3, tmsk3, tdep3, wdep3, tpnt3, wlev3)
+                        var3, tmsk3, tdep3, wdep3, tpnt3, wlev3, var3_aux, msk_mes)
 
     #==============================================
     # CREATING VERTICAL MATRIXES CENTERED ON T POINTS
 
     if PlotType == "pcolor":
 
-       Tvar2new, Tx2new, Tdep2new = com.nemo_ver_Tgrid4pcolor(var2, x2, tdep2, wdep2)
+       Tvar2new, Tx2new, Tdep2new = utl.nemo_ver_Tgrid4pcolor(var2, x2, tdep2, wdep2)
        Tx2   = np.copy(Tx2new)
        Tdep2 = np.copy(Tdep2new)
        Tvar2 = np.copy(Tvar2new)
@@ -801,6 +831,12 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
        Tvar2new[0,:]    = var2[0,:]
        Tvar2new[-1,:]   = var2[-1,:]
 
+       if var2_aux != []:
+          Tvar2_auxnew = np.zeros(shape=(var2_aux.shape[0]+2,  var2_aux.shape[1]))
+          Tvar2_auxnew[1:-1,:] = var2_aux
+          Tvar2_auxnew[0,:]    = var2_aux[0,:]
+          Tvar2_auxnew[-1,:]   = var2_aux[-1,:]
+
        Tmsk2new[1:-1,:] = tmsk2
        Tmsk2new[0,:]    = tmsk2[0,:]
        Tmsk2new[-1,:]   = tmsk2[-1,:]
@@ -820,6 +856,8 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
           Tx2   = np.copy(Tx2new)
           Tdep2 = np.copy(Tdep2new)
           Tvar2 = np.copy(Tvar2new)
+          if var2_aux != []:
+             Tvar2_aux = np.copy(Tvar2_auxnew)
 
        Tmsk2 = np.copy(Tmsk2new)
 
@@ -833,35 +871,52 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
     #==============================================
     # OPENING FIGURE
 
-    fig = plt.figure(figsize = (34.,17.5), dpi=500)
+    fig = plt.figure(figsize = (34.,17.5), dpi=100)
 
     #==============================================
     # SETTING BATHY PATCHES
 
     if rbat2 != [] or mbat_ln == "true":
 
+       if msk_mes is not None:
+          VLEV = 'MES'
+       else:
+          VLEV = vlevel
+
+       if msk_mes is not None:
+          msk_zps2 = np.ones(msk_mes2.shape) - msk_mes2
+          Tdep2loc = np.copy(tdep2)
+          for k in range(Tdep2loc.shape[0]):
+              Tdep2loc[k,:] = Tdep2loc[k,int(Tdep2loc.shape[1]/2.)]
+          rbat2_max = np.nanmax(rbat2+500.)
+          rpatch_loc, mpatch_loc, RB_loc, MB_loc, ZE_loc = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
+                                                                         x2       , tdep2     , wdep2    , \
+                                                                         tmsk2    , mbat_fill , "Z_ps"   , \
+                                                                         ""       , rbat2_max, msk_zps2)
+          del rpatch_loc, RB_loc, MB_loc, ZE_loc
 
        if PlotType == "pcolor":
 
-             if vlevel == "Z_ps":
+             if VLEV == "Z_ps":
                 rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                            x2, tdep2, wdep2, tmsk2, mbat_fill, \
-                                                           vlevel, PlotType)
-             elif vlevel == "S_re" or vlevel == "MES":
+                                                           VLEV, PlotType)
+             elif VLEV == "S_re" or VLEV == "MES":
                 #rbat2_max = np.nanmax(rbat2)
                 rbat2_max = np.nanmax(tdep3) + 0.5*(np.nanmax(tdep3[-1,:,:])-np.nanmax(tdep3[-2,:,:]))
                 rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                         x2, tdep2, Tdep2new, tmsk2, mbat_fill, \
-                                                        vlevel, PlotType, rbat2_max)
+                                                        VLEV, PlotType, rbat2_max, msk_mes2)
              else:
                 rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                            x2, tdep2, Tdep2new, tmsk2, mbat_fill, \
-                                                           vlevel, PlotType)
+                                                           VLEV, PlotType)
         
        elif PlotType == "contourf":
+             rbat2_max = np.nanmax(rbat2+500.)
              rpatch, mpatch, RB, MB, ZE = mpl_sec_bathy(rbat2_sec, rbat2_fill, zenv2_sec, \
                                                         x2, tdep2, wdep2, tmsk2, mbat_fill, \
-                                                        vlevel, PlotType)
+                                                        VLEV, PlotType, rbat2_max, msk_mes2)
 
     #==============================================
     # SETTING PLOT LIMITS
@@ -872,23 +927,27 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
     #==============================================
     # DRAWING SCALAR FIELD IF REQUESTED
 
+    patch_msk = False
+
     if PlotType == "contourf":
-       if mbat_fill == "true":
+       if mbat_fill == "true": #and vlevel != "Z_ps":
 
-          cmap, pc = mpl_sec_draw_scalar(PlotType, Tvar2, Tx2, Tdep2, vlim_min, vlim_max, \
-                                         colmap, cn_line, cn_level, cn_label, cn_color, cn_fill)
-          plt.gca().patch.set_color('grey')
-       else:
-
+          #cmap, pc = mpl_sec_draw_scalar(PlotType, Tvar2, Tx2, Tdep2, vlim_min, vlim_max, \
+          #                               colmap, cn_line, cn_level, cn_label, cn_color, cn_fill)
+          #patch_msk = True
+       #else:
           Tvar2_sol = np.copy(Tvar2)
+          Tvar2_auxsol = np.copy(Tvar2_aux)
           for i in np.arange(Tvar2_sol.shape[1]):
               for k in np.arange(1,Tvar2_sol.shape[0]):
                   if Tmsk2[k,i] == 0 and Tmsk2[k-1,i] == 1:
                      Tvar2_sol[k::,i] = Tvar2_sol[k-1,i]
+                     if Tvar2_auxsol != []: 
+                        Tvar2_auxsol[k::,i] = Tvar2_auxsol[k-1,i]
                      break
           cmap, pc = mpl_sec_draw_scalar(PlotType, Tvar2_sol, Tx2, Tdep2, vlim_min, vlim_max, \
-                                         colmap, cn_line, cn_level, cn_label, cn_color, cn_fill)
-             
+                                         colmap, cn_line, cn_level, cn_label, cn_color, cn_fill, Tvar2_auxsol)
+               
     elif PlotType == "pcolor":
           cmap, pc = mpl_sec_draw_scalar(PlotType, Tvar2, Tx2, Tdep2, vlim_min, vlim_max, \
                                          colmap, cn_line, cn_level, cn_label, cn_color, cn_fill)
@@ -899,8 +958,17 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
     #==============================================
     # DRAWING VERTICAL LEVELS IF REQUESTED
 
-    if vlevel != "no":
-       W_l = mpl_sec_draw_levels(x2, wlev2)
+    #if vlevel != "no":
+    #   if msk_mes is not None:
+    #      wlev2_loc = np.copy(wlev2)
+    #      wlev2_loc[msk_zps2 == 0] = np.nan
+    #      for k in range(nk):
+    #          wlev_loc = wlev2_loc[k,:]
+    #          wlev_loc = wlev_loc[np.isfinite(wlev_loc)]
+    #          if wlev_loc.shape[0] > 0:
+    #             wlev2_loc[k,:] = np.unique(wlev_loc)[-1]
+    #      wlev2[msk_zps2 == 1] = wlev2_loc[msk_zps2 == 1]
+    #   W_l = mpl_sec_draw_levels(x2, wlev2)
 
     #==============================================
     # DRAWING GRID POINTS IF REQUESTED
@@ -943,10 +1011,15 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
     ylabel = "Depth [m]" 
     clabel = var_strng + " " + unit_strng
 
-    ax, cb = mpl_sec_figure(fig, pc, clabel, title, xlabel, ylabel)     
+    if PlotType == "contourf": 
+       ax, cb = mpl_sec_figure(fig, pc, clabel, title, xlabel, ylabel, cn_level)
+    else:     
+       ax, cb = mpl_sec_figure(fig, pc, clabel, title, xlabel, ylabel)
 
     if mpatch != []: ax.add_patch(mpatch)
     if rpatch != []: ax.add_patch(rpatch)
+    if patch_msk: plt.gca().patch.set_color('silver') 
+    if msk_mes is not None: ax.add_patch(mpatch_loc)
 
     #==============================================
     # SETTING LIMITS
@@ -957,12 +1030,13 @@ def mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, Plo
     #==============================================
     # INSET MAP
 
-    a = plt.axes([pos1.x0+0.005, pos1.y0+0.01, .2, .2])
-    m.drawcoastlines()
-    m.fillcontinents()
-    x2, y2 = m(np.asarray(lon_sec), np.asarray(lat_sec))
-    MAP = plt.plot(x2, y2, c="red")
-    plt.setp(MAP, 'linewidth', 2.5)
+    if m != []:
+       a = plt.axes([pos1.x0+0.005, pos1.y0+0.01, .2, .2])
+       m.drawcoastlines()
+       m.fillcontinents()
+       x2, y2 = m(np.asarray(lon_sec), np.asarray(lat_sec))
+       MAP = plt.plot(x2, y2, c="red")
+       plt.setp(MAP, 'linewidth', 2.5)
 
     #==============================================
     # SAVING FIGURE
@@ -983,7 +1057,8 @@ def mpl_sec_loop(exp_name, fig_type, var_strng, unit_strng, date, timeres, times
                  rbat2=[], zenv2=[], rbat2_fill="false", mbat_ln="false", mbat_fill="false", \
                  xlim='no', ylim='no', varlim='no', check='false', check_val='false', \
                  xgrid='false', colmap='jet', cn_level=20, cn_line='true', cn_label='true', \
-                 cn_color='false', cn_fill='true', cn_RegVertLev='false', cn_RVlevel='auto', msk_mes=None):
+                 cn_color='false', cn_fill='true', cn_RegVertLev='false', cn_RVlevel='auto', 
+                 var_aux=None, msk_mes=None, first_zlv=None):
 
     '''
     This function loops over timesteps and section list
@@ -991,43 +1066,43 @@ def mpl_sec_loop(exp_name, fig_type, var_strng, unit_strng, date, timeres, times
     '''
 
     if var4 == []:
-       print ""
-       print "========================================="
-       print "NO VARIABLES SELECTED"
-       print ""
+       print("")
+       print("=========================================")
+       print("NO VARIABLES SELECTED")
+       print("")
        plot_geom = True
     else:
        plot_geom = False
-       print ""
-       print "========================================="
-       print "VARIABLES: ", var_strng
-       print ""
-       print PlotType
-       print ""
+       print("")
+       print("=========================================")
+       print("VARIABLES: ", var_strng)
+       print("")
+       print(PlotType)
+       print("")
        # MANAGING TIME-STEPS -----------------------------------
        if timestep == []:
           timestep = "init"
        else:
-          if isinstance(timestep[0], basestring):
+          if isinstance(timestep[0], (str, bytes)):
              if timestep[0] == "all":
                 if var4 != []:
                    timestep = np.arange(var4.shape[0])
                 else:
-                   print "mpl_plot_sec_loop() ERROR:"
-                   print "No variable selected, please check!!"
+                   print("mpl_plot_sec_loop() ERROR:")
+                   print("No variable selected, please check!!")
                    return
        # MANAGING LIMITS ---------------------------------------
-       if isinstance(varlim, basestring):
+       if isinstance(varlim, (str, bytes)):
           if varlim == "maxmin":
              varmax = np.nanmax(var4)
              varmin = np.nanmin(var4)
-             print "var4 max:", varmax
-             print "var4 min:", varmin
+             print("var4 max:", varmax)
+             print("var4 min:", varmin)
              varlim = [varmin, varmax]
 
        else:
-          print "var4 max:", varlim[1]
-          print "var4 min:", varlim[0]
+          print("var4 max:", varlim[1])
+          print("var4 min:", varlim[0])
 
     #===================================================================================
     # LOOP over SECTIONS
@@ -1037,39 +1112,39 @@ def mpl_sec_loop(exp_name, fig_type, var_strng, unit_strng, date, timeres, times
         J = sec_j[s]
         secI = []
         secJ = []
-        print "SEC I INDEX: ", I
-        print "SEC J INDEX: ", J
+        #print("SEC I INDEX: ", I)
+        #print("SEC J INDEX: ", J)
         if isinstance(I, list) and isinstance(J, list):
            for p in np.arange(len(I)):
-               if not isinstance(I[p], (int, long)):
-                  j, i = com.get_ij_from_lon_lat(I[p], J[p], tlon3[0,:,:], tlat3[0,:,:])
+               if not isinstance(I[p], (int)):
+                  j, i = utl.get_ij_from_lon_lat(I[p], J[p], tlon3[0,:,:], tlat3[0,:,:])
                   secI.append(i)
                   secJ.append(j)
                else:
                   secI.append(I[p])
                   secJ.append(J[p])
-           print secI
-           print secJ
+           #print(secI)
+           #print(secJ)
         else:
            if (I == -1 and J == -1) or \
               (I != -1 and J != -1):
-              print "mpl_plot_sec_loop() ERROR:"
-              print "No fixed index for section chosen: please check!!"
+              print("mpl_plot_sec_loop() ERROR:")
+              print("No fixed index for section chosen: please check!!")
               return
 
            if I == -1:
               secI = I
-              if not isinstance(J, (int, long)):
-                 j, i = com.get_ij_from_lon_lat(tlon3[0,0,0], J, tlon3[0,:,:], tlat3[0,:,:])
-                 print j
+              if not isinstance(J, (int)):
+                 j, i = utl.get_ij_from_lon_lat(tlon3[0,0,0], J, tlon3[0,:,:], tlat3[0,:,:])
+                 #print(j)
                  secJ = j          
               else:
                  secJ = J
            if J == -1:
               secJ = J            
-              if not isinstance(I, (int, long)):
-                 j, i = com.get_ij_from_lon_lat(I, tlat3[0,0,0], tlon3[0,:,:], tlat3[0,:,:])
-                 print j, i
+              if not isinstance(I, (int)):
+                 j, i = utl.get_ij_from_lon_lat(I, tlat3[0,0,0], tlon3[0,:,:], tlat3[0,:,:])
+                 #print(j, i)
                  secI = i
               else:
                  secI = I       
@@ -1078,11 +1153,11 @@ def mpl_sec_loop(exp_name, fig_type, var_strng, unit_strng, date, timeres, times
 
            mpl_lev(exp_name, fig_type, secI, secJ, tlon3, tlat3, tdep3, wdep3, tmsk3, proj, \
                    coord_type, vlevel, check, rbat2, zenv2, rbat2_fill, mbat_ln, mbat_fill, \
-                   xlim, ylim, xgrid, msk_mes)
+                   xlim, ylim, xgrid, msk_mes, first_zlv)
 
         else:
            # LOOP over TIMESTEPS
-           if isinstance(timestep, basestring):
+           if isinstance(timestep, (str, bytes)):
               time = "00:00"
               # in this case var4 is 3D
               mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, timestep, PlotType, \
@@ -1090,15 +1165,20 @@ def mpl_sec_loop(exp_name, fig_type, var_strng, unit_strng, date, timeres, times
                       vlevel, rbat2, zenv2, rbat2_fill, mbat_ln, mbat_fill, \
                       xlim, ylim, varlim, colmap, check, check_val, xgrid, \
                       cn_level, cn_line, cn_label, cn_color, cn_fill, \
-                      cn_RegVertLev, cn_RVlevel)
+                      cn_RegVertLev, cn_RVlevel, var_aux)
            else:
               for t in timestep:
-                  print "time step: ", t
+                  print("time step: ", t)
                   if var4 != []:
                      var3              = var4[t,:,:,:]
                      var3[tmsk3 == 0.] = np.nan
                   else:
                      var3 = []
+                  if var_aux is not None:
+                     var3_aux = var_aux[t,:,:,:]
+                     var3_aux[tmsk3 == 0.] = np.nan
+                  else:
+                     var3_aux = var_aux
 
                   if   timeres == "1h": 
                        time = "%02d" % t + ":30"
@@ -1109,11 +1189,12 @@ def mpl_sec_loop(exp_name, fig_type, var_strng, unit_strng, date, timeres, times
                   elif timeres == "4h": # for jmmp only one file output
                        time = "" #"%02d" % t*4  
 
-                  mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, str(t+1), PlotType, \
-                          secI, secJ, tlon3, tlat3, tdep3, wdep3, tmsk3, var3, proj, coord_type, \
-                          vlevel, rbat2, zenv2, rbat2_fill, mbat_ln, mbat_fill, \
-                          xlim, ylim, varlim, colmap, check, check_val, xgrid, cn_level, \
-                          cn_line, cn_label, cn_color, cn_fill, cn_RegVertLev, cn_RVlevel)
+                  mpl_sec(exp_name, fig_type, var_strng, unit_strng, date, time, str(t+1), PlotType,
+                          secI, secJ, tlon3, tlat3, tdep3, wdep3, tmsk3, var3, proj, coord_type,
+                          vlevel, rbat2, zenv2, rbat2_fill, mbat_ln, mbat_fill,
+                          xlim, ylim, varlim, colmap, check, check_val, xgrid, cn_level,
+                          cn_line, cn_label, cn_color, cn_fill, cn_RegVertLev, cn_RVlevel, 
+                          var3_aux, msk_mes, first_zlv)
 
     return
 

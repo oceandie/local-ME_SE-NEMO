@@ -14,7 +14,7 @@ from utils import compute_masks
 
 # 1. Input files
 
-DOMCFG_MEs = '/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12-r075-r040_v3/domain_cfg_r12_r12-r075-r040_v3.nc'
+DOMCFG_szt = '/data/users/dbruciaf/OVF/szT_GO8/real/szt_p1_L48_mod/domain_cfg_szt_p1_L48_mod.nc'
 LOCAL_area = '/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12-r075-r040_v3/bathymetry.loc_area.dep2800_novf_sig1_stn9_itr1.MEs_4env_2800_r12_r12-r075-r040_v3.nc'
 
 # 2. ANALYSIS cross-sections
@@ -24,8 +24,6 @@ sec_lon1 = [ 0.34072625, -3.56557722,-18.569585  ,-26.42872351, -30.314948]
 sec_lat1 = [68.26346438, 65.49039963, 60.79252542, 56.24488972,  52.858934]
 
 # Denmark Strait
-#sec_lon2 = [-10.84451672, -25.30818606, -35.61730763, -44.081319]
-#sec_lat2 = [ 71.98049514,  66.73449533,  61.88833838,  56.000932]
 sec_lon2 = [-10.84451672, -25.30818606, -35., -44.081319]
 sec_lat2 = [ 71.98049514,  66.73449533,  61.88833838,  56.000932]
 sec_lon3 = [-33.4446, -24.0055]
@@ -58,9 +56,10 @@ sec_J_indx_1b_L  = [sec_lat1, sec_lat2, sec_lat3, sec_lat4, sec_lat5, sec_lat6]
 coord_type_1b_L  = "dist"
 rbat2_fill_1b_L  = "false"
 xlim_1b_L        = "maxmin"    # [0., 1600.]
-ylim_1b_L        = [0., 5900.] # "maxmin"
-vlevel_1b_L      = 'MES'
+ylim_1b_L        = [0., 3500.] # "maxmin"
+vlevel_1b_L      = 'SZT'
 xgrid_1b_L       = "false"
+first_zlv        = 49
 
 # 3. INDEXES specifying a cut of the domain
 #    needed to seep up plots
@@ -70,33 +69,17 @@ j1 = 880
 j2 = 1140
 
 # ========================================================================
-# Reading local-area mask
+# Reading local-MEs mask
 msk_mes = None
 ds_msk = xr.open_dataset(LOCAL_area)
 ds_msk = ds_msk.isel(x=slice(i1,i2),y=slice(j1,j2))
 if "s2z_msk" in ds_msk.variables:
    msk_mes = ds_msk["s2z_msk"].values
-   #msk_mes[msk_mes>0] = 1
-hbatt = []
-nenv = 1
-while nenv > 0:
-  name_env = "hbatt_"+str(nenv)
-  if name_env in ds_msk.variables:
-      hbatt.append(ds_msk[name_env].values)
-      nenv+=1
-  else:
-      nenv=0
+   msk_mes[msk_mes>0] = 1
 del ds_msk
 
-if msk_mes is not None:
-   for env in hbatt:
-       env[msk_mes < 2] = np.nan
-msk_mes[msk_mes>0] = 1
-#msk_mes[msk_mes<2] = 0
-#msk_mes[msk_mes>0] = 1
-
 # Loading domain geometry
-ds_dom  = open_domain_cfg(files=[DOMCFG_MEs])
+ds_dom  = open_domain_cfg(files=[DOMCFG_szt])
 for i in ['bathymetry','bathy_meter']:
     for dim in ['x','y']:
         ds_dom[i] = ds_dom[i].rename({dim: dim+"_c"})
@@ -142,7 +125,7 @@ timeres_dm = ""
 timestep   = []
 PlotType   = ""
 var4       = []
-#hbatt      = []
+hbatt      = []
 mbat_ln    = "false"
 mbat_fill  = "true"
 varlim     = "no"
@@ -153,6 +136,7 @@ check_val  = 'false'
 mpl_sec_loop('ORCA025-locMEs mesh', '.png', var_strng, unit_strng, date, timeres_dm, timestep, PlotType,
               sec_I_indx_1b_L, sec_J_indx_1b_L, tlon3, tlat3, tdep3, wdep3, tmsk3, var4, proj,
               coord_type_1b_L, vlevel_1b_L, bathy, hbatt, rbat2_fill_1b_L, mbat_ln, mbat_fill,
-              xlim_1b_L, ylim_1b_L, varlim, check, check_val, xgrid_1b_L, msk_mes=msk_mes)
+              xlim_1b_L, ylim_1b_L, varlim, check, check_val, xgrid_1b_L, 
+              msk_mes=msk_mes, first_zlv=first_zlv)
 
 
