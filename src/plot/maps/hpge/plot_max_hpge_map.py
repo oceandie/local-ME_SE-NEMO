@@ -22,10 +22,11 @@ from utils import plot_hpge
 
 # 1. INPUT FILES
 
-vcoord = 'r015-r010'#_r007_r004v2'
-DOMCFG_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/r015-r010_r007_r004v2/domain_cfg_r015-r010_007_004v2.nc'
-HPGE_dir = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_300_1650/ant/'
-HPGE_file = '/maximum_hpge.nc'
+vcoord = 'MEs_450-800_3200'#_r007_r004v2'
+DOMCFG_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_450-800_3200/domain_cfg_r018-01-01_glo-r018-01_ant_opt_v3.nc'
+HPGE_dir = '/data/users/dbruciaf/SE-NEMO/se-orca025/'
+HPGE_file_ant = '/maximum_hpge_3env_800_015-010_ant.nc'
+HPGE_file_glo = '/maximum_hpge_4env_450_015-010-010_glo.nc'
 
 #vcoord = 'hsz_51_ztap'
 #DOMCFG_file = '/data/users/dbruciaf/SE-NEMO/se-orca025/hsz_39_ztap/domain_cfg_39_ztaper_match.nc'
@@ -33,10 +34,6 @@ HPGE_file = '/maximum_hpge.nc'
 #HPGE_file = '/maximum_hpge.nc'
 
 # 3. PLOT
-#lon0 = -178.
-#lon1 =  178.
-#lat0 =  -78.8
-#lat1 =   88.
 proj =  None #ccrs.Robinson() #ccrs.Mercator() #ccrs.Robinson()
 
 # ==============================================================================
@@ -47,22 +44,14 @@ for i in ['bathymetry','bathy_meter']:
     for dim in ['x','y']:
         ds_dom[i] = ds_dom[i].rename({dim: dim+"_c"})
 
-ds_hpge  = xr.open_dataset(HPGE_dir + vcoord + HPGE_file)
 
-# Extracting only the part of the domain we need
-#ds_dom  = ds_dom.isel(x_c=slice(880,1200),x_f=slice(880,1200),y_c=slice(880,1140),y_f=slice(880,1140))
-#ds_hpge =  ds_hpge.isel(x=slice(880,1200),y=slice(880,1140))
+# GLOBAL SHELVES
+ds_hpge  = xr.open_dataset(HPGE_dir + vcoord + HPGE_file_glo)
 
-
-# Plotting BATHYMETRY ----------------------------------------------------------
-
-#bathy = ds_dom["bathymetry"]
 bathy = ds_dom["bathymetry"]#.isel(x_c=slice(1, None), y_c=slice(1, None))
 varss = list(ds_hpge.keys())
 
 for env in range(len(varss)):
-
-    # GLOBAL SHELVES
 
     fig_name = 'GLO_' + varss[env] + '_' + vcoord + '.png'
     fig_path = "./"
@@ -77,12 +66,17 @@ for env in range(len(varss)):
     cbar_hor = 'horizontal'
     #map_lims = [0, 1441, 390, 1206]
     map_lims = [0, 1441, 0, 1206]
-    cn_lev = [300.] # None 
+    cn_lev = [450.,1500.,2600.] # None 
 
     plot_hpge(fig_name, fig_path, lon, lat, var, proj, colmap, 
               vmin, vmax, cbar_extend, cbar_label, cbar_hor, map_lims, bathy, cn_lev)
 
-    # ANTARCTIC SHELF
+# ANTARCTIC SHELF
+ds_hpge  = xr.open_dataset(HPGE_dir + vcoord + HPGE_file_ant)
+bathy = ds_dom["bathymetry"]#.isel(x_c=slice(1, None), y_c=slice(1, None))
+varss = list(ds_hpge.keys())
+
+for env in range(len(varss)):
 
     fig_name = 'ANT_' + varss[env] + '_' + vcoord + '.png'
     fig_path = "./"

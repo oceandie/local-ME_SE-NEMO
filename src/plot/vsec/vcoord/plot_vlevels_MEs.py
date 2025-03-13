@@ -14,47 +14,49 @@ from utils import compute_masks
 
 # 1. Input files
 
-DOMCFG_MEs = '/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12-r075-r040_v3/domain_cfg_r12_r12-r075-r040_v3.nc'
-LOCAL_area = '/data/users/dbruciaf/OVF/MEs_GO8/env4.v2.maxdep/2800/r12_r12-r075-r040_v3/bathymetry.loc_area.dep2800_novf_sig1_stn9_itr1.MEs_4env_2800_r12_r12-r075-r040_v3.nc'
+DOMCFG_MEs = '/data/users/dbruciaf/SE-NEMO/se-orca025/se-nemo-domain_cfg/domain_cfg_MEs.nc'
+LOCAL_area = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_450-800_3200/bathymetry.loc_area.dep3200_polglo_sig3_itr1.MEs_4env_450_018-010-010_opt_v2_glo.nc'
+#LOCAL_area = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_450-800_3200/bathymetry.loc_area.dep3200_polant_sig3_itr1.MEs_3env_800_018-010_opt_v3_ant.nc'
 
 # 2. ANALYSIS cross-sections
 
-# Iceland-Faroe Ridge
-sec_lon1 = [ 0.34072625, -3.56557722,-18.569585  ,-26.42872351, -30.314948]
-sec_lat1 = [68.26346438, 65.49039963, 60.79252542, 56.24488972,  52.858934]
+# ANTARCTICA
+#sec_lon1 = [830, 963]
+#sec_lat1 = [341, 334]
+sec_lon1 = [-59.13, -30.91]
+sec_lat1 = [-77.16, -67.18]
+#sec_lon2 = [911, 1005]
+#sec_lat2 = [207, 329]
+#sec_lon3 = [434, 433]
+#sec_lat3 = [160, 305]
+#sec_lon4 = [833, 807]
+#sec_lat4 = [256, 324]
 
-# Denmark Strait
-#sec_lon2 = [-10.84451672, -25.30818606, -35.61730763, -44.081319]
-#sec_lat2 = [ 71.98049514,  66.73449533,  61.88833838,  56.000932]
-sec_lon2 = [-10.84451672, -25.30818606, -35., -44.081319]
-sec_lat2 = [ 71.98049514,  66.73449533,  61.88833838,  56.000932]
-sec_lon3 = [-33.4446, -24.0055]
-sec_lat3 = [ 67.6902,  65.5927]
-sec_lon4 = [-29.8692, -24.0002]
-sec_lat4 = [ 68.4979,  65.8794]
+# GLOBAL
+sec_lon2 = [ -5.29, -19.56] # NW E shelf
+sec_lat2 = [ 50.24,  50.32]
+sec_lon3 = [121.85, 105.57] # Australia
+sec_lat3 = [-20.29, -17.57]
+sec_lon4 = [120.53, 134.99] # China
+sec_lat4 = [ 36.97,  24.12]
+#sec_lon5 = [819, 882]
+#sec_lat5 = [824, 795]
+#sec_lon6 = [778, 789]
+#sec_lat6 = [811, 770]
+#sec_lon7 = [929, 954]
+#sec_lat7 = [1039, 971]
+#sec_lon8 = [1061, 1123]
+#sec_lat8 = [1097, 1114]
+#sec_lon9 = [1123, 1101]
+#sec_lat9 = [918, 888]
+#sec_lon10 = [1163, 1129]
+#sec_lat10 = [942, 1006]
 
-# Pierre-like section
-sec_lon5 = [-34.8650, -35.6696, -6.094913]
-sec_lat5 = [ 62.6496,  66.1957, 56.283842]
 
-# Mattia-like section
-sec_lon6 = [-27.70520729, -28.07997397, -28.45969688, -28.85371389,
-            -29.20340174, -29.45701538, -29.81805224, -30.2004988 ,
-            -30.62412978, -31.0539745 , -31.48476823, -31.90946898,
-            -32.32042909, -32.68453171, -32.99092802, -33.17180383,
-            -33.33201739, -33.5831037 , -33.94562868, -34.26654917,
-            -34.54165955, -34.86276303, -35.1888309 , -35.49957294,
-            -35.76996098, -36.09467135, -36.44359909, -36.80504419,
-            -37.09818747]
-sec_lat6 = [66.03902481, 65.94587003, 65.85452313, 65.77525271, 65.66862967,
-            65.52229975, 65.42612706, 65.34899946, 65.31453947, 65.30626256,
-            65.31424516, 65.28674186, 65.2342894 , 65.14096325, 65.01632524,
-            64.85612429, 64.69301328, 64.54988437, 64.46799526, 64.35972094,
-            64.2274042 , 64.11548858, 64.0059749 , 63.88921957, 63.75946712,
-            63.65173953, 63.56142445, 63.48258579, 63.35948396]
-
-sec_I_indx_1b_L  = [sec_lon1, sec_lon2, sec_lon3, sec_lon4, sec_lon5, sec_lon6]
-sec_J_indx_1b_L  = [sec_lat1, sec_lat2, sec_lat3, sec_lat4, sec_lat5, sec_lat6]
+#sec_I_indx_1b_L  = [sec_lon1]#, sec_lon2, sec_lon3, sec_lon4] 
+#sec_J_indx_1b_L  = [sec_lat1]#, sec_lat2, sec_lat3, sec_lat4] 
+sec_I_indx_1b_L  = [sec_lon2, sec_lon3, sec_lon4] #, sec_lon6, sec_lon7, sec_lon8, sec_lon9, sec_lon10]
+sec_J_indx_1b_L  = [sec_lat2, sec_lat3, sec_lat4] #, sec_lat6, sec_lat7, sec_lat8, sec_lat9, sec_lat10]
 coord_type_1b_L  = "dist"
 rbat2_fill_1b_L  = "false"
 xlim_1b_L        = "maxmin"    # [0., 1600.]
@@ -64,10 +66,10 @@ xgrid_1b_L       = "false"
 
 # 3. INDEXES specifying a cut of the domain
 #    needed to seep up plots
-i1 = 880
-i2 = 1150
-j1 = 880
-j2 = 1140
+i1 = 0
+i2 = -1 #1440
+j1 = 0
+j2 = -1 #470
 
 # ========================================================================
 # Reading local-area mask
@@ -92,8 +94,6 @@ if msk_mes is not None:
    for env in hbatt:
        env[msk_mes < 2] = np.nan
 msk_mes[msk_mes>0] = 1
-#msk_mes[msk_mes<2] = 0
-#msk_mes[msk_mes>0] = 1
 
 # Loading domain geometry
 ds_dom  = open_domain_cfg(files=[DOMCFG_MEs])
@@ -146,7 +146,7 @@ var4       = []
 mbat_ln    = "false"
 mbat_fill  = "true"
 varlim     = "no"
-check      = 'true'
+check      = 'false'
 check_val  = 'false'
 
 

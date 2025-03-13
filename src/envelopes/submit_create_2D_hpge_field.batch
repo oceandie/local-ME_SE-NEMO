@@ -1,12 +1,10 @@
 #!/bin/bash -l
 
 #SBATCH --qos=normal                
-#SBATCH --mem=100000                    
+#SBATCH --mem=150000                    
 #SBATCH --ntasks=8                   
-#SBATCH --output=hpge_2D_r15_r15.out       
+#SBATCH --output=hpge_2D.out       
 #SBATCH --time=360                    
 
-export MPLBACKEND='Agg'
 python create_2D_hpge_field.py 
-unset MPLBACKEND
-
+#python create_2D_hpge_field_szt.py

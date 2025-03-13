@@ -1,0 +1,15 @@
+#!/bin/bash -l
+
+#SBATCH --qos=normal                
+#SBATCH --mem=150000                    
+#SBATCH --ntasks=8                   
+#SBATCH --output=gen_env.out       
+#SBATCH --time=360                    
+
+#loc_inp='loc_area_glo.inp'
+loc_inp='loc_area_ant.inp'
+
+export MPLBACKEND='Agg'
+python generate_loc_msk.py ${loc_inp}
+unset MPLBACKEND
+

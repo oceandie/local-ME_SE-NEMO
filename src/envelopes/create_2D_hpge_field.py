@@ -17,23 +17,28 @@ import glob
 import numpy as np
 from matplotlib import pyplot as plt
 import xarray as xr
-import xarray.ufuncs as xu
 from dask.diagnostics import ProgressBar
 
 # ==============================================================================
 # Input files
 # ==============================================================================
 
+# Localisation mask
+loc_area = 'ant' #'glo'
+loc_dir = '/data/users/dbruciaf/SE-NEMO/se-orca025/MEs_450-800_3200'
+if loc_area == 'glo':
+   loc_file = loc_dir + '/bathymetry.loc_area.dep3200_polglo_sig3_itr1.nc' # Global'
+   num_lev = [39,54,63,75]
+else:
+   loc_file = loc_dir + '/bathymetry.loc_area.dep3200_polant_sig3_itr1.nc' # Antarctica
+   num_lev = [45,63,75]
+
 # Folder path containing HPGE spurious currents velocity files 
-#HPGEdir = '/scratch/dbruciaf/SE-eORCA025/r015-r010_r007_r004'
-#HPGEdir = '/scratch/dbruciaf/SE-eORCA025/hsz_39_ztap'
-#HPGEdir = '/scratch/dbruciaf/SE-eORCA025/hsz_51_ztap'
-HPGEdir = '/scratch/dbruciaf/SE-eORCA025/r015-r010_r007_r004v2'
+HPGEdir = '/scratch/dbruciaf/SE-NEMO'
 
 # List of indexes of the last T-level of each vertical subdomains 
 # (Fortran indexening convention)
-num_lev = [74]
-#num_lev = [40,62]
+#num_lev = [75]
 
 # Name of the zonal and meridional velocity variables
 Uvar = 'uo'
@@ -43,6 +48,10 @@ chunk_var = 'time_counter'
 chunk_size = 1
 
 # ==============================================================================
+
+ds_msk = xr.open_dataset(loc_file).squeeze()
+msk = ds_msk["s2z_msk"]
+
 # LOOP
 
 Ufiles = sorted(glob.glob(HPGEdir+'/*grid-U.nc'))
@@ -71,25 +80,42 @@ for F in range(len(Ufiles)):
        ni = hpge.data.shape[3]
        nj = hpge.data.shape[2]
        if len(num_lev) > 1:
+          max_hpge1 = np.zeros(shape=(nj,ni))
           max_hpge2 = np.zeros(shape=(nj,ni))
           max_hpge3 = np.zeros(shape=(nj,ni))
+          if loc_area == 'glo':
+             max_hpge4 = np.zeros(shape=(nj,ni))
        else:
           max_hpge1 = np.zeros(shape=(nj,ni))
 
     if len(num_lev) > 1:
-       maxhpge_2 = hpge.isel(k=slice(None, num_lev[0])).max(dim='k').max(dim='t')
-       maxhpge_3 = hpge.isel(k=slice(num_lev[0], num_lev[1])).max(dim='k').max(dim='t')
-       max_hpge2 = xu.maximum(max_hpge2, maxhpge_2.data)
-       max_hpge3 = xu.maximum(max_hpge3, maxhpge_3.data)
+       maxhpge_1 = hpge.isel(k=slice(None, num_lev[0])).max(dim='k').max(dim='t')
+       maxhpge_1 = maxhpge_1.where(msk>0,0.)
+       maxhpge_2 = hpge.isel(k=slice(num_lev[0], num_lev[1])).max(dim='k').max(dim='t')
+       maxhpge_2 = maxhpge_2.where(msk>0,0.)
+       maxhpge_3 = hpge.isel(k=slice(num_lev[1], num_lev[2])).max(dim='k').max(dim='t')
+       maxhpge_3 = maxhpge_3.where(msk>0,0.)
+       if loc_area == 'glo':
+          maxhpge_4 = hpge.isel(k=slice(num_lev[2], num_lev[3])).max(dim='k').max(dim='t')
+          maxhpge_4 = maxhpge_4.where(msk>0,0.)
+       max_hpge1 = np.maximum(max_hpge1, maxhpge_1.data)
+       max_hpge2 = np.maximum(max_hpge2, maxhpge_2.data)
+       max_hpge3 = np.maximum(max_hpge3, maxhpge_3.data)
+       if loc_area == 'glo':
+          max_hpge4 = np.maximum(max_hpge4, maxhpge_4.data)
     else:
        maxhpge_1 = hpge.isel(k=slice(None, num_lev[0])).max(dim='k').max(dim='t')
-       max_hpge1 = xu.maximum(max_hpge1, maxhpge_1.data)
+       maxhpge_1 = maxhpge_1.where(msk>0,0.)
+       max_hpge1 = np.maximum(max_hpge1, maxhpge_1.data)
 
 # Saving 
 ds_hpge = xr.Dataset()
 if len(num_lev) > 1:
+   ds_hpge["max_hpge_1"] = xr.DataArray(max_hpge1, dims=('y','x'))
    ds_hpge["max_hpge_2"] = xr.DataArray(max_hpge2, dims=('y','x'))
    ds_hpge["max_hpge_3"] = xr.DataArray(max_hpge3, dims=('y','x'))
+   if loc_area == 'glo':
+      ds_hpge["max_hpge_4"] = xr.DataArray(max_hpge4, dims=('y','x'))
 else:
    ds_hpge["max_hpge_1"] = xr.DataArray(max_hpge1, dims=('y','x'))
 
@@ -98,7 +124,7 @@ else:
 
 print('WRITING the maximum_hpge.nc FILE')
 
-out_file = "maximum_hpge.nc"
+out_file = loc_area + "_maximum_hpge.nc"
 delayed_obj = ds_hpge.to_netcdf(join(HPGEdir,out_file), compute=False)
 
 with ProgressBar():

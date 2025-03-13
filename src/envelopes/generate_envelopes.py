@@ -66,14 +66,20 @@ envInfo = read_envInfo(env_file)
 # Reading bathymetry and horizontal grid
 msg_info('Reading bathymetry data ... ')
 ds_bathy = xr.open_dataset(envInfo.bathyFile).squeeze()
-ds_bathy = ds_bathy.set_coords(["nav_lon","nav_lat"])
-bathy = ds_bathy["Bathymetry"].squeeze()
 
 msg_info('Reading horizontal grid data ... ')
 ds_grid = xr.open_dataset(envInfo.hgridFile) 
-glamt = ds_grid["glamt"]
-gphit = ds_grid["gphit"]
+glamt = ds_grid["glamt"].squeeze()
+gphit = ds_grid["gphit"].squeeze()
 
+if "nav_lon" in ds_bathy:
+   ds_bathy = ds_bathy.set_coords(["nav_lon","nav_lat"])
+else:
+   ds_bathy["nav_lon"] = glamt
+   ds_bathy["nav_lat"] = gphit
+   ds_bathy = ds_bathy.set_coords(["nav_lon","nav_lat"])
+
+bathy = ds_bathy["Bathymetry"].fillna(0.).squeeze()
 ds_env = ds_bathy.copy()
 
 # Defining local variables -----------------------------------------------------
@@ -90,11 +96,9 @@ e_loc_vmx = envInfo.e_loc_vmx
 e_loc_rmx = envInfo.e_loc_rmx
 e_loc_hal = envInfo.e_loc_hal
 e_glo_rmx = envInfo.e_glo_rmx
+e_tap_equ = envInfo.e_tap_equ
 
-e_loc_rgn = envInfo.e_loc_rgn
-e_loc_mes = envInfo.e_loc_mes
-s2z_sigma = envInfo.s2z_sigma
-s2z_itera = envInfo.s2z_itera
+tol = 1.e-7
 
 # Computing LSM
 lsm = xr.where(bathy > 0, 1, 0) 
@@ -145,9 +149,10 @@ for env in range(num_env):
        hbatt = calc_zenv(env_bathy, surf, e_min_ofs[env], e_max_dep[env])  
  
     # MEs-coordinates are tapered in vicinity of the Equator
-    if (np.nanmax(gphit) * np.nanmin(gphit)) < 0:
-       ztaper = np.exp( -(gphit/8.)**2. )
-       hbatt  = np.nanmax(hbatt) * ztaper + hbatt * (1. - ztaper)   
+    if e_tap_equ:
+       if (np.nanmax(gphit) * np.nanmin(gphit)) < 0:
+          ztaper = np.exp( -(gphit/8.)**2. )
+          hbatt  = np.nanmax(hbatt) * ztaper + hbatt * (1. - ztaper)   
 
     hbatt.plot()
     plt.show()
@@ -157,7 +162,7 @@ for env in range(num_env):
     msg = '2. Smoothing the envelope'
     msg_info(msg)  
 
-    # Computing then MB06 Slope Parameter for the raw envelope
+    # Computing the MB06 Slope Parameter for the raw envelope
     rmax_raw = np.amax(calc_rmax(hbatt)*lsm).values
     msg = '   Slope parameter of raw envelope: rmax = ' + str(rmax_raw)
     msg_info(msg)
@@ -271,10 +276,13 @@ for env in range(num_env):
 
 # -------------------------------------------------------------------------------------
 # Setting a localised MEs-coord. system if required
-if envInfo.zgridFile != "no":
+if "s2z_wgt" in ds_env.variables:
 
    msg = 'SETTING A LOCALISED MEs-coordinates system'
    msg_info(msg, main=True)
+
+   # Read weights
+   weights = ds_env["s2z_wgt"]
 
    # Read distribution of levels of global z-coord. grid
    dsz = xr.open_dataset(envInfo.zgridFile)
@@ -285,52 +293,7 @@ if envInfo.zgridFile != "no":
    e3W = dsz.e3w_1d.broadcast_like(dsz.e3w_0).squeeze()
    gdepw_0, gdept_0 = e3_to_dep(e3W, e3T)
 
-   # Create input mask identifying zone
-   # where we want local MEs-coordinates
-   # 0 = z-zone, 1 = MEs-zone
-   msk_s = generate_mes_area(e_loc_rgn, bathy, e_max_dep[e_loc_mes])
-   ds_env["mes_area"] = msk_s
-   msk_s.plot()
-   plt.show()
-
-   # Creating the transition zone
-   msg = '   Using envelope ' + str(num_env-1) + ' to compute the transition zone'
-   msg_info(msg)
-
-   env = ds_env["hbatt_"+str(num_env)]
-   lev = gdepw_0[{"z":-1}]
-   zenv = env.where(msk_s==1,lev)
-   
-   # 2. Gaussian filtering for identifying 
-   #    limits of transition zone
-   wrk = zenv.copy()
-   for nit in range(s2z_itera):
-      zenv_gauss = gaussian_filter(wrk, s2z_sigma)
-      zenv_gauss = zenv.where(msk_s==1,zenv_gauss)
-      wrk = zenv_gauss.copy()
-
-   # 3. Mask identifying zones
-   #    z      = 0
-   #    s to z = 1
-   #    s      = 2
-   msk_zones = xr.full_like(zenv,None,dtype=np.double)
-   msk = np.zeros(shape=msk_zones.values.shape)
-
-   diff = zenv_gauss - zenv
-   msk[diff.values!=0] = 1
-   msk[msk_s==1] = 2
-   msk_zones.data = msk
-   ds_env["s2z_msk"] = msk_zones
-
-   # 4. Weights to generate transitioning envelope
-   msg = '   Computing weights ...'
-   msg_info(msg)
-   weights = weighting_dist(msk_zones, a=1.7)
-   da_wgt = xr.full_like(zenv,None,dtype=np.double)
-   da_wgt.data = weights
-   ds_env["s2z_wgt"] = da_wgt
-
-   # 5. Creating transitioning envelopes
+   # Creating transitioning deeper envelope
    env = ds_env["hbatt_"+str(num_env)]
    lev = gdepw_0[{"z":-1}]
    wrk = xr.full_like(env,None,dtype=np.double)
@@ -343,9 +306,11 @@ if envInfo.zgridFile != "no":
 msg = 'WRITING the bathy_meter.nc FILE'
 msg_info(msg)
 
-out_name = splitext(basename(env_file))[0] + '_maxdep_' + str(e_max_dep[e_loc_mes])
+out_name = splitext(basename(envInfo.bathyFile))[0] + "." + splitext(basename(env_file))[0]
 
-out_file = "bathymetry." + out_name + ".nc"
+print(out_name)
+
+out_file = out_name + ".nc"
 
 ds_env.to_netcdf(out_file)
 

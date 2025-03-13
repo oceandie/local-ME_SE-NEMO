@@ -330,7 +330,7 @@ def mpl_sec_bathy(rbat, rbat_fill, zenv, x2, tdep2, wdep2, tmsk2, mbat_fill, \
              codes     = np.ones(nverts, int) * path.Path.LINETO
              codes[0]  = path.Path.MOVETO
              polyg     = path.Path(vertexes, codes)
-             mpatch    = patches.PathPatch(polyg, facecolor='gray', edgecolor='black', alpha=1.,zorder=5)
+             mpatch    = patches.PathPatch(polyg, facecolor='black', edgecolor='black', alpha=1.,zorder=5)
 
     # 5. Z-ENV VERTEXES
 
@@ -344,7 +344,7 @@ def mpl_sec_bathy(rbat, rbat_fill, zenv, x2, tdep2, wdep2, tmsk2, mbat_fill, \
                zenv_z.append(zenv[nenv,i])
            # 6. Z-ENV LINE
            ZE = plt.plot(zenv_x, zenv_z, color='red', label='Z-Envelope')
-           plt.setp(ZE, 'linewidth', 5., zorder=10)    
+           plt.setp(ZE, 'linewidth', 7., zorder=10)    
 
     return rpatch, mpatch, RB, MB, ZE
 
@@ -490,15 +490,15 @@ def mpl_sec_figure(fig, pc, var_strng, title, xlabel, ylabel, cn_level=None):
     ax = fig.gca() # Get the current Axes instance on the current
                    # figure matching the given keyword args, or create one.
 
-    ax.set_title(title, y=1.02, fontsize='25')
+    #ax.set_title(title, y=1.02, fontsize='25')
 
     ax.invert_yaxis()
 
-    ax.set_xlabel(xlabel, fontsize='30')
-    ax.set_ylabel(ylabel, fontsize='30')
+    ax.set_xlabel(xlabel, fontsize='80')
+    ax.set_ylabel(ylabel, fontsize='80')
 
-    ax.tick_params(axis='x', labelsize=20)
-    ax.tick_params(axis='y', labelsize=20)
+    ax.tick_params(axis='x', labelsize=60)
+    ax.tick_params(axis='y', labelsize=60)
 
     ax.xaxis.labelpad = 20
     ax.yaxis.labelpad = 20
@@ -599,8 +599,9 @@ def mpl_lev(exp_name, fig_type, sec_i, sec_j, tlon3, tlat3, tdep3, wdep3, tmsk3,
             #==============================================
             # OPENING FIGURE
 
-            fig = plt.figure(figsize = (34.,17.5), dpi=100)
-      
+            #fig = plt.figure(figsize = (34.,17.5), dpi=100)
+            fig = plt.figure(figsize = (34.,25.), dpi=100)      
+
             #==============================================
             # SETTING BATHYMETRY PATCH
 

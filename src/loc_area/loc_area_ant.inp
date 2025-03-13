@@ -1,0 +1,22 @@
+# ==========================================================================
+# INPUT FILE TO SETUP A LOCALISED VERTICAL COORDINATE SYSTEM               |
+# ==========================================================================
+
+# A) INPUT FILES
+
+# *) Bathymetry of the domain
+bathyFile = '/data/users/dbruciaf/OVF/GO8-eORCA025_domain/bathymetry.eORCA025-GO6.nocanyon_byhand.nc'
+
+# *) Horizontal grid of the domain
+hgridFile = '/data/users/dbruciaf/SE-NEMO/se-orca025/se-nemo-domain_cfg/coordinates.nc'
+
+# B) LOCALISATION AREA: parameters to identify
+#    limits of localisation area
+loc_isobt = 3200.
+loc_polyg = "ant"
+
+# c) TRANSITION AREA: parameters for Gaussian filtering 
+#    to identify limits of transition area
+s2z_factr = 1.e-10
+s2z_sigma = 3
+s2z_itera = 1

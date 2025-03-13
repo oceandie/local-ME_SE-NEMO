@@ -6,6 +6,8 @@ import netCDF4 as nc4
 import xarray as xr
 from xarray import Dataset, DataArray 
 
+import matplotlib.pyplot as plt
+
 #=======================================================================================
 def read_envInfo(filepath):
     '''
@@ -23,9 +25,9 @@ def read_envInfo(filepath):
     loader  = imp.SourceFileLoader(filepath,filepath)
     envInfo = loader.load_module()
 
-    attr = ['bathyFile', 'hgridFile', 'zgridFile', 'e_min_ofs', 'e_max_dep',\
-            'e_loc_vel', 'e_loc_var', 'e_loc_vmx', 'e_loc_rmx', 'e_loc_hal',\
-            'e_glo_rmx', 'e_loc_rgn', 'e_loc_mes', 's2z_sigma', 's2z_itera' ]
+    attr = ['bathyFile', 'hgridFile', 'zgridFile', 'e_min_ofs', 
+            'e_max_dep', 'e_loc_vel', 'e_loc_var', 'e_loc_vmx', 
+            'e_loc_rmx', 'e_loc_hal', 'e_glo_rmx', 'e_tap_equ']
 
     errmsg = False
     for a in attr:
@@ -240,147 +242,3 @@ def msg_info(message,main=False):
     else:
        print(message)
     print('')
-
-#=======================================================================================
-def find_bdy_JI(mask):
-
-    nJ = mask.shape[0]
-    nI = mask.shape[1]
-    JI = []
-    for j in range(1,nJ):
-       for i in range(1,nI):
-           if (mask[j,i] == 0.0) and (np.sum(mask[j-1:j+2,i-1:i+2]) != 0.0):
-               JI.append([j,i])
-    return JI
-
-#=======================================================================================
-def weighting_dist(msk_zones,a):
-    '''
-    msk_zones == 2: s-levels
-    msk_zones == 1: s- to z-levels
-    msk_zones == 0: z-levels
-    '''
-
-    nJ = msk_zones.shape[0]
-    nI = msk_zones.shape[1]
-
-    # Area where we WANT ONLY s-levels
-    msk_inner = np.ones(shape=(nJ,nI))
-    msk_inner[msk_zones==2] = 0
-    # Area where we DO NOT want z-levels
-    msk_outer = np.ones(shape=(nJ,nI))
-    msk_outer[msk_zones==0] = 0
-
-    bdy_inner = find_bdy_JI(msk_inner)
-    bdy_outer = find_bdy_JI(msk_outer)
-
-    w = np.zeros(shape=(nJ,nI))
-    w[msk_outer == 0.0] = 0.0 # where we want only z-levels
-    w[msk_inner == 0.0] = 1.0 # where we want only s-levels
-
-    for j in range(1,nJ):
-        for i in range(1,nI):
-            if msk_outer[j,i]*msk_inner[j,i] != 0.0:
-               d_in = 999999.
-               for kbdy in bdy_inner:
-                    jj = kbdy[0]
-                    ii = kbdy[1]
-                    dist = np.sqrt((j-jj)**2 + (i-ii)**2)
-                    if dist < d_in:
-                       d_in = dist
-
-               d_out = 999999.
-               for kbdy in bdy_outer:
-                   jj = kbdy[0]
-                   ii = kbdy[1]
-                   dist = np.sqrt((j-jj)**2 + (i-ii)**2)
-                   if dist < d_out:
-                      d_out = dist
-
-               w[j,i] = 0.5*(np.tanh(a*(2*d_out/(d_in + d_out)-1))/np.tanh(a)+1)
-
-    return w
-
-#=======================================================================================
-def floodfill(field,j,i,checkValue,newValue):
-    '''
-    This is a modified version of the original algorithm:
-
-    1) checkValue is the value we do not want to change,
-       i.e. is the value identifying the boundaries of the 
-       region we want to flood.
-    2) newValue is the new value we want for points whose initial value
-       is not checkValue and is not newValue.
-       N.B. if a point with initial value = to newValue is met, then the
-            flooding stops. 
-
-    Example:
-
-    a = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0],
-                  [0, 0, 3, 2, 1, 5, 6, 9, 0],
-                  [0, 0, 8, 9, 0, 0, 0, 4, 0],
-                  [0, 0, 8, 9, 7, 2, 3, 0, 0],
-                  [0, 0, 4, 4, 0, 0, 0, 0, 0],
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0]])
-   
-    j_start = 3
-    i_start = 4
-    b = com.floodfill(a,j_start,i_start,0,2)
- 
-    b = array([[0, 0, 0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 2, 2, 1, 5, 6, 9, 0],
-               [0, 0, 2, 2, 0, 0, 0, 4, 0],
-               [0, 0, 2, 2, 2, 2, 3, 0, 0],
-               [0, 0, 2, 2, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0, 0, 0]])
-
-    '''
-    Field = np.copy(field)
-
-    theStack = [ (j, i) ]
-
-    while len(theStack) > 0:
-          try:
-              j, i = theStack.pop()
-              if Field[j,i] == checkValue:
-                 continue
-              if Field[j,i] == newValue:
-                 continue
-              Field[j,i] = newValue
-              theStack.append( (j, i + 1) )  # right
-              theStack.append( (j, i - 1) )  # left
-              theStack.append( (j + 1, i) )  # down
-              theStack.append( (j - 1, i) )  # up
-          except IndexError:
-              continue # bounds reached
-
-    return Field
-
-
-#=======================================================================================
-def generate_mes_area(e_loc_rgn, bathy, max_dep):
-
-    s_msk   = bathy.where(bathy<max_dep, -1)
-    s_msk   = s_msk.where(s_msk==-1, 1)
-    s_msk   = s_msk.where(s_msk==1, 0)
-    
-    # MASK FOR ANTARCTICA
-    lsm_msk = s_msk.copy()
-    lsm_msk[0,:] = -1
-    i_start = 680
-    j_start = 90
-    aa_msk_fill = floodfill(lsm_msk.data, j_start, i_start, 0, -1.)
-    
-    msk = s_msk.data
-
-    if e_loc_rgn == 1:
-       # only ANTARCTICA
-       msk[aa_msk_fill>=0] = 0
-    elif e_loc_rgn == 2:
-       # excluding ANTARCTICA 
-       msk[aa_msk_fill<0] = 0
-    
-    s_msk.data = msk
-
-    return s_msk
-

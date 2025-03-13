@@ -1,0 +1,14 @@
+#!/bin/bash -l
+
+#SBATCH --qos=normal                
+#SBATCH --mem=100000                    
+#SBATCH --ntasks=8                   
+#SBATCH --output=gen_env.out       
+#SBATCH --time=360                    
+
+MEs_inp='/home/h01/dbruciaf/mod_dev/local-ME_GS/src/envelopes/orca12/MEs_4env_000-010-010.inp'
+
+export MPLBACKEND='Agg'
+python generate_envelopes.py ${MEs_inp} 
+unset MPLBACKEND
+
